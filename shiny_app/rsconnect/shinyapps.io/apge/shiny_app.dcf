@@ -5,8 +5,8 @@ account: apge
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 636382
-bundleId: 1807779
-url: https://apge.shinyapps.io/shiny_app/
-when: 1547159870.45116
+bundleId: 1808262
+url: https://castillocs.shinyapps.io/shiny_app/
+when: 1547187290.7687
 asMultiple: FALSE
 asStatic: FALSE
