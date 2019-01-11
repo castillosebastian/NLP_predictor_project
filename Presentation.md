@@ -1,0 +1,23 @@
+Data Science Specialization Final Project
+=============================================
+
+Claudio Sebastián Castillo, 2019
+
+Introduction
+========================================================
+
+The Data Science Specialization Capstone Project from Johns Hopkins University and Coursera is focus in the **Natural Language Processing** domain. The goal of this project is to create an application that predict the next word from a corpus called. For make that prediction Natural Language Processing techniques were used.
+
+Statistical Methods and algorithm
+========================================================
+
+The aplication is based on sampled data from diferent source (News, Twitter and Blog), processed appropriately for analysis, and tokenized into n-grams. Using that subset of cleaned data we computed **Maximum Likelihood Estimation** (MLE) of unigrams, bigrams, and trigrams. We improve accuracy with Jelinek-Mercer smoothing algorithm. 
+
+Shiny App
+========================================================
+
+The aplication is a simple user interface that take an text imput and generate a predicted word as output.
+
+- Application is running at: https://castillocs.shinyapps.io/shiny_app/
+
+- Github link for various code files is here:  https://github.com/castillosebastian/NLP_predictor_project

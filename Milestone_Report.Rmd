@@ -1,0 +1,189 @@
+---
+title: 'Milestone Report'
+author: "Castillo Claudio Sebastian, castilloclaudiosebastian@gmail.com"
+date: "2019-01-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This is the Milestone Report for the Coursera Data Science Capstone project. The goal of the capstone project is to create a predictive text model using a large text corpus of documents as training data and aply NLP techniques. This milestone report describes features of the training data with our exploratory data analysis and summarizes our plans for creating the predictive model.
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## Load CRAN modules 
+library(downloader)
+library(dplyr)
+library(knitr)
+library(tm)
+library(stringr)
+library(stringi)
+library(purrr)
+library(RWeka)
+library(ggplot2)
+library(kableExtra)
+``` 
+
+# Reading de Datasets
+
+List all the files of /final/en_US Dataset folder. The data sets consist of text from 3 different sources: 1) News, 2) Blogs and 3) Twitter feeds. 
+
+```{r}
+path <- file.path("./projectData/final" , "en_US")
+files<-list.files(path, recursive=TRUE)
+
+# Lets make a file connection, read the files lines and close the acces. 
+con <- file("./projectData/final/en_US/en_US.twitter.txt", "r") 
+lineTwitter<-readLines(con, skipNul = TRUE)
+close(con)
+con <- file("./projectData/final/en_US/en_US.blogs.txt", "r") 
+lineBlogs<-readLines(con, skipNul = TRUE)
+close(con)
+con <- file("./projectData/final/en_US/en_US.news.txt", "r") 
+lineNews<-readLines(con, skipNul = TRUE)
+close(con)
+```
+
+# Explore the data and create some summary statistics
+
+We examined the data sets and summarize our findings
+
+```{r}
+# Structure of df
+str(lineTwitter)
+str(lineBlogs)
+str(lineNews)
+
+# Sample of 1 observation to control the transformation (want to see the process)
+exampleNews <- lineNews[4]
+exampleBlog <- lineBlogs[4]
+exampleTwit <- lineTwitter[4]
+exampleTwit
+exampleBlog
+exampleNews
+
+# File sizes
+lineBlogs.size <- file.info("./projectData/final/en_US/en_US.blogs.txt")$size / 1024 ^ 2
+lineNews.size <- file.info("./projectData/final/en_US/en_US.news.txt")$size / 1024 ^ 2
+lineTwitter.size <- file.info("./projectData/final/en_US/en_US.twitter.txt")$size / 1024 ^ 2
+
+# Get words in files
+lineBlogs.words <- stringi::stri_count_words(lineBlogs)
+lineNews.words <- stringi::stri_count_words(lineNews)
+lineTwitter.words <- stringi::stri_count_words(lineTwitter)
+
+```
+
+## Summary Table
+
+```{r, echo=FALSE}
+# Summary of the data sets
+library(tibble)
+summary <- tribble(
+  ~data_source,  ~file.size.MB,  ~num.lines,  ~num.words,  ~mean.num.words,
+  "blogs", lineBlogs.size, length(lineBlogs), sum(lineBlogs.words), mean(lineBlogs.words),
+  "news", lineNews.size, length(lineNews), sum(lineNews.words), mean(lineNews.words),
+  "twitter", lineTwitter.size, length(lineTwitter), sum(lineTwitter.words), mean(lineTwitter.words))
+kable(summary)
+```
+
+## Cleaning The Data
+
+Lets clean the data removing special characters, punctuations, numbers, excess whitespace, urls and stopwords. We will also change the text to lower case. Finaly, we will randomly choose 2% of the data to demonstrate the exploratory analysis. These 2% was chosen after failing to work with big vectors of 5% sample size.
+
+```{r}
+# Randomly Sample the Datasets
+set.seed(3456)
+data.sample <- c(sample(lineBlogs, length(lineBlogs) * 0.02),
+                 sample(lineNews, length(lineNews) * 0.02),
+                 sample(lineTwitter, length(lineTwitter) * 0.02))
+
+# Create corpus and clean the data
+corpus <- VCorpus(VectorSource(data.sample))
+# str(corpus)
+# inspect(corpus[1])
+
+cleanspace <- function(x, pattern) {
+  df <- gsub(pattern, " ", x)
+  df
+} 
+corpus <- tm_map(corpus, cleanspace, "(f|ht)tp(s?)://(.*)[.][a-z]+")
+corpus <- tm_map(corpus, cleanspace, "@[^\\s]+")
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, stripWhitespace)
+corpus <- tm_map(corpus, PlainTextDocument)
+```
+
+## Exploratory Analysis
+
+We will search for the most frequently words in the data. Here we list the most common bigrams and trigrams.
+
+```{r}
+# Free memory
+rm(lineTwitter)
+rm(lineBlogs)
+rm(lineNews)
+
+# Lets create some tools 
+freq <- function(x) {
+  freq <- sort(rowSums(as.matrix(x)), decreasing = TRUE)
+  return(data.frame(word = names(freq), freq = freq))
+}
+
+bigram <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+trigram <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
+#quadgram <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
+
+# Let see document matrix
+TermDocumentMatrix(corpus)
+
+# Get frequencies of most common bigram and tigram in data sample
+#freq1 <- freq(removeSparseTerms(TermDocumentMatrix(corpus), 0.9999))
+freq2 <- freq(removeSparseTerms(TermDocumentMatrix(corpus, control = list(tokenize = bigram)), 0.9999))
+freq3 <- freq(removeSparseTerms(TermDocumentMatrix(corpus, control = list(tokenize = trigram)), 0.9999))
+# freq4 <- freq(removeSparseTerms(TermDocumentMatrix(corpus, control = list(tokenize = quadgram)), 0.9999))
+
+# save RDS version
+#saveRDS(freq1, "freq1.rds")
+saveRDS(freq2, "freq2.rds")
+saveRDS(freq3, "freq3.rds")
+# saveRDS(freq4, "freq4.rds")
+
+# load RDS for future use
+# freq1 <- readRDS(freq1, "freq2.rds")
+# freq2 <- readRDS(freq2, "freq2.rds")
+# freq3 <- readRDS(freq2, "freq3.rds")
+```
+
+
+Plot of 10 most frequent bigrams 
+
+```{r}
+freq2[1:10,] %>% 
+  ggplot(aes(reorder(word, -freq), freq)) +
+         labs(x = "10 most frequent bigrams", y = "Frequency") +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+         geom_bar(stat = "identity", fill = I("blue"))
+```
+
+Plot of 10 most frequent trigrams 
+
+```{r}
+freq3[1:10,] %>% 
+  ggplot(aes(reorder(word, -freq), freq)) +
+         labs(x = "10 most frequent trigrams", y = "Frequency") +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+         geom_bar(stat = "identity", fill = I("blue"))
+```
+
+
+## Conclusion and Ideas por Final Capstone
+
+We will use a ngram model in the final capstone project. We will take the trigram model first to predict next word, if we don't have a matching trigram we'll search for a bigram aplying the corresponding data model. We dismiss the quadgram model for not having significant information and the unigram because of memory allocation and speed. With these algorithm we are going to deploy our Shiny app. 

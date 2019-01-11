@@ -1,0 +1,12 @@
+name: shiny_app
+title: shiny_app
+username:
+account: apge
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 636382
+bundleId: 1807779
+url: https://apge.shinyapps.io/shiny_app/
+when: 1547159870.45116
+asMultiple: FALSE
+asStatic: FALSE
